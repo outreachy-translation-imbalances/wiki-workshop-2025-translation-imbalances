@@ -1,0 +1,48 @@
+# Untitled notebook
+
+```elixir
+Mix.install([
+  {:mediawiki_client, "~> 0.5.0"},
+  {:kino_vega_lite, "~> 0.1.0"},
+  {:vega_lite, "~> 0.1.0"}
+])
+```
+
+## Fetch site statistics for all Wikipedia language editions
+
+```elixir
+{:ok, all_sites} = Wiki.SiteMatrix.get_all()
+wikipedias = Enum.filter(all_sites, & &1.project == "wiki" && !&1.closed && !&1.private)
+```
+
+```elixir
+site_stats =
+  wikipedias
+  |> Enum.map(fn site ->
+    {:ok, %{result: %{"query" => %{"statistics" => result}}}} =
+      site
+      |> Wiki.Action.new()
+      |> Wiki.Action.get(action: :query, meta: :siteinfo, siprop: :statistics)
+  
+    {site.dbname, result}
+  end)
+  |> Enum.into(%{})
+```
+
+```elixir
+
+```
+
+## Fetch Content Translation statistics
+
+There used to be an API `contenttranslationstats` but this was disabled due to performance concerns (see task [T392839](https://phabricator.wikimedia.org/T392839)).  Instead, we'll have to iterate over all language pairs.
+
+```elixir
+{:ok, %{result: result}} =
+  Wiki.Action.new(:enwiki, accumulate: true)
+  |> Wiki.Action.get(action: :query, list: :cxpublishedtranslations, from: "es", to: "ca")
+```
+
+```elixir
+length(result["result"]["translations"])
+```
