@@ -1,18 +1,544 @@
-# Untitled notebook
+<!-- livebook:{"persist_outputs":true} -->
+
+# Data support for Translation Imbalances in Wikipedia language editions
 
 ```elixir
 Mix.install([
+  {:csv, "~> 3.0"},
   {:mediawiki_client, "~> 0.5.0"},
   {:kino_vega_lite, "~> 0.1.0"},
   {:vega_lite, "~> 0.1.0"}
 ])
 ```
 
+## Introduction
+
+The data here is support for an extended abstract presented at Wiki Workshop 2025, "[Translation Imbalances Between Wikipedia Language Editions](https://wikiworkshop.org/2025/paper/wikiworkshop_2025_paper_33.pdf)" .  Although we originally did this work using private data sources, the limited results published in the paper can be recalculated from public sources and we attempt to do so below.  Note that there may be slight differences due to the time ranges included.
+
+This file is an Elixir [livebook](https://livebook.dev/) and it should be possible to run locally if you wish.
+
 ## Fetch site statistics for all Wikipedia language editions
 
 ```elixir
 {:ok, all_sites} = Wiki.SiteMatrix.get_all()
-wikipedias = Enum.filter(all_sites, & &1.project == "wiki" && !&1.closed && !&1.private)
+
+wikipedias =
+  Enum.filter(all_sites, fn site ->
+    site.project == "wiki" && !site.closed && !site.private
+  end)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://pms.wikipedia.org",
+    closed: false,
+    dbname: "pmswiki",
+    dir: "ltr",
+    lang: "pms",
+    name: "Piedmontese Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://smn.wikipedia.org",
+    closed: false,
+    dbname: "smnwiki",
+    dir: "ltr",
+    lang: "smn",
+    name: "Inari Sami Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://am.wikipedia.org",
+    closed: false,
+    dbname: "amwiki",
+    dir: "ltr",
+    lang: "am",
+    name: "Amharic ውክፔዲያ",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://jv.wikipedia.org",
+    closed: false,
+    dbname: "jvwiki",
+    dir: "ltr",
+    lang: "jv",
+    name: "Javanese Wikipédia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://anp.wikipedia.org",
+    closed: false,
+    dbname: "anpwiki",
+    dir: "ltr",
+    lang: "anp",
+    name: "Angika विकिपीडिया",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://tr.wikipedia.org",
+    closed: false,
+    dbname: "trwiki",
+    dir: "ltr",
+    lang: "tr",
+    name: "Turkish Vikipedi",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ast.wikipedia.org",
+    closed: false,
+    dbname: "astwiki",
+    dir: "ltr",
+    lang: "ast",
+    name: "Asturian Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://mi.wikipedia.org",
+    closed: false,
+    dbname: "miwiki",
+    dir: "ltr",
+    lang: "mi",
+    name: "Māori Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ee.wikipedia.org",
+    closed: false,
+    dbname: "eewiki",
+    dir: "ltr",
+    lang: "ee",
+    name: "Ewe Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://gom.wikipedia.org",
+    closed: false,
+    dbname: "gomwiki",
+    dir: "ltr",
+    lang: "gom",
+    name: "Goan Konkani विकिपीडिया",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://bs.wikipedia.org",
+    closed: false,
+    dbname: "bswiki",
+    dir: "ltr",
+    lang: "bs",
+    name: "Bosnian Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://iu.wikipedia.org",
+    closed: false,
+    dbname: "iuwiki",
+    dir: "ltr",
+    lang: "iu",
+    name: "Inuktitut ᐅᐃᑭᐱᑎᐊ",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://mhr.wikipedia.org",
+    closed: false,
+    dbname: "mhrwiki",
+    dir: "ltr",
+    lang: "mhr",
+    name: "Eastern Mari Википедий",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://nn.wikipedia.org",
+    closed: false,
+    dbname: "nnwiki",
+    dir: "ltr",
+    lang: "nn",
+    name: "Norwegian Nynorsk Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://olo.wikipedia.org",
+    closed: false,
+    dbname: "olowiki",
+    dir: "ltr",
+    lang: "olo",
+    name: "Livvi-Karelian Wikipedii",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://rn.wikipedia.org",
+    closed: false,
+    dbname: "rnwiki",
+    dir: "ltr",
+    lang: "rn",
+    name: "Rundi Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://trv.wikipedia.org",
+    closed: false,
+    dbname: "trvwiki",
+    dir: "ltr",
+    lang: "trv",
+    name: "Taroko Wikipidiya",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://vls.wikipedia.org",
+    closed: false,
+    dbname: "vlswiki",
+    dir: "ltr",
+    lang: "vls",
+    name: "West Flemish Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://tw.wikipedia.org",
+    closed: false,
+    dbname: "twwiki",
+    dir: "ltr",
+    lang: "tw",
+    name: "Twi Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://arc.wikipedia.org",
+    closed: false,
+    dbname: "arcwiki",
+    dir: "rtl",
+    lang: "arc",
+    name: "Aramaic ܘܝܩܝܦܕܝܐ",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://hr.wikipedia.org",
+    closed: false,
+    dbname: "hrwiki",
+    dir: "ltr",
+    lang: "hr",
+    name: "Croatian Wikipedija",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ku.wikipedia.org",
+    closed: false,
+    dbname: "kuwiki",
+    dir: "ltr",
+    lang: "ku",
+    name: "Kurdish Wîkîpediya",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://crh.wikipedia.org",
+    closed: false,
+    dbname: "crhwiki",
+    dir: "ltr",
+    lang: "crh",
+    name: "Crimean Tatar Vikipediya",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ne.wikipedia.org",
+    closed: false,
+    dbname: "newiki",
+    dir: "ltr",
+    lang: "ne",
+    name: "Nepali विकिपिडिया",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ary.wikipedia.org",
+    closed: false,
+    dbname: "arywiki",
+    dir: "rtl",
+    lang: "ary",
+    name: "Moroccan Arabic ويكيپيديا",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://frp.wikipedia.org",
+    closed: false,
+    dbname: "frpwiki",
+    dir: "ltr",
+    lang: "frp",
+    name: "Arpitan Vouiquipèdia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://bat-smg.wikipedia.org",
+    closed: false,
+    dbname: "bat_smgwiki",
+    dir: "ltr",
+    lang: "sgs",
+    name: "Samogitian Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ba.wikipedia.org",
+    closed: false,
+    dbname: "bawiki",
+    dir: "ltr",
+    lang: "ba",
+    name: "Bashkir Википедия",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://syl.wikipedia.org",
+    closed: false,
+    dbname: "sylwiki",
+    dir: "ltr",
+    lang: "syl",
+    name: "Sylheti ꠃꠁꠇꠤꠙꠤꠒꠤꠀ",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://om.wikipedia.org",
+    closed: false,
+    dbname: "omwiki",
+    dir: "ltr",
+    lang: "om",
+    name: "Oromo Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://tay.wikipedia.org",
+    closed: false,
+    dbname: "taywiki",
+    dir: "ltr",
+    lang: "tay",
+    name: "Atayal Wikipidia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ks.wikipedia.org",
+    closed: false,
+    dbname: "kswiki",
+    dir: "rtl",
+    lang: "ks",
+    name: "Kashmiri وِکیٖپیٖڈیا",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://bjn.wikipedia.org",
+    closed: false,
+    dbname: "bjnwiki",
+    dir: "ltr",
+    lang: "bjn",
+    name: "Banjar Wikipidia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://avk.wikipedia.org",
+    closed: false,
+    dbname: "avkwiki",
+    dir: "ltr",
+    lang: "avk",
+    name: "Kotava Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://mai.wikipedia.org",
+    closed: false,
+    dbname: "maiwiki",
+    dir: "ltr",
+    lang: "mai",
+    name: "Maithili विकिपिडिया",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://fi.wikipedia.org",
+    closed: false,
+    dbname: "fiwiki",
+    dir: "ltr",
+    lang: "fi",
+    name: "Finnish Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://tdd.wikipedia.org",
+    closed: false,
+    dbname: "tddwiki",
+    dir: "ltr",
+    lang: "tdd",
+    name: "Tai Nuea ᥝᥤᥱ ᥑᥤᥱ ᥚᥤᥱ ᥖᥤᥱ ᥕᥣᥱ",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://hyw.wikipedia.org",
+    closed: false,
+    dbname: "hywwiki",
+    dir: "ltr",
+    lang: "hyw",
+    name: "Western Armenian Ուիքիփետիա",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://got.wikipedia.org",
+    closed: false,
+    dbname: "gotwiki",
+    dir: "ltr",
+    lang: "got",
+    name: "Gothic Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://pwn.wikipedia.org",
+    closed: false,
+    dbname: "pwnwiki",
+    dir: "ltr",
+    lang: "pwn",
+    name: "Paiwan Wikipedia",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://mrj.wikipedia.org",
+    closed: false,
+    dbname: "mrjwiki",
+    dir: "ltr",
+    lang: "mrj",
+    name: "Western Mari Википеди",
+    private: false,
+    project: "wiki",
+    opts: []
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://et.wikipedia.org",
+    closed: false,
+    dbname: "etwiki",
+    dir: "ltr",
+    lang: "et",
+    name: "Estonian Vikipeedia",
+    private: false,
+    project: "wiki",
+    ...
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://sr.wikipedia.org",
+    closed: false,
+    dbname: "srwiki",
+    dir: "ltr",
+    lang: "sr",
+    name: "Serbian Википедија",
+    private: false,
+    ...
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://ext.wikipedia.org",
+    closed: false,
+    dbname: "extwiki",
+    dir: "ltr",
+    lang: "ext",
+    name: "Extremaduran Güiquipeya",
+    ...
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://mg.wikipedia.org",
+    closed: false,
+    dbname: "mgwiki",
+    dir: "ltr",
+    lang: "mg",
+    ...
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://mt.wikipedia.org",
+    closed: false,
+    dbname: "mtwiki",
+    dir: "ltr",
+    ...
+  },
+  %Wiki.SiteMatrix.Spec{
+    base_url: "https://kge.wikipedia.org",
+    closed: false,
+    dbname: "kgewiki",
+    ...
+  },
+  %Wiki.SiteMatrix.Spec{base_url: "https://sah.wikipedia.org", closed: false, ...},
+  %Wiki.SiteMatrix.Spec{base_url: "https://bo.wikipedia.org", ...},
+  %Wiki.SiteMatrix.Spec{...},
+  ...
+]
 ```
 
 ```elixir
@@ -29,20 +555,2098 @@ site_stats =
   |> Enum.into(%{})
 ```
 
-```elixir
+<!-- livebook:{"output":true} -->
 
+```
+%{
+  "pmswiki" => %{
+    "activeusers" => 30,
+    "admins" => 4,
+    "articles" => 70341,
+    "cirrussearch-article-words" => 453896,
+    "edits" => 877019,
+    "images" => 1893,
+    "jobs" => 0,
+    "pages" => 106275,
+    "queued-massmessages" => 0,
+    "users" => 29498
+  },
+  "smnwiki" => %{
+    "activeusers" => 22,
+    "admins" => 5,
+    "articles" => 6227,
+    "cirrussearch-article-words" => 1131471,
+    "edits" => 128489,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 26146,
+    "queued-massmessages" => 0,
+    "users" => 5588
+  },
+  "amwiki" => %{
+    "activeusers" => 52,
+    "admins" => 1,
+    "articles" => 15419,
+    "cirrussearch-article-words" => 1957839,
+    "edits" => 384722,
+    "images" => 1357,
+    "jobs" => 0,
+    "pages" => 46323,
+    "queued-massmessages" => 0,
+    "users" => 51122
+  },
+  "jvwiki" => %{
+    "activeusers" => 108,
+    "admins" => 5,
+    "articles" => 74487,
+    "cirrussearch-article-words" => 11447940,
+    "edits" => 1721438,
+    "images" => 4344,
+    "jobs" => 0,
+    "pages" => 184958,
+    "queued-massmessages" => 0,
+    "users" => 66449
+  },
+  "anpwiki" => %{
+    "activeusers" => 32,
+    "admins" => 1,
+    "articles" => 1643,
+    "cirrussearch-article-words" => 725067,
+    "edits" => 21756,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 5079,
+    "queued-massmessages" => 0,
+    "users" => 2870
+  },
+  "trwiki" => %{
+    "activeusers" => 2583,
+    "admins" => 23,
+    "articles" => 635666,
+    "cirrussearch-article-words" => 177573070,
+    "edits" => 35300071,
+    "images" => 43227,
+    "jobs" => 0,
+    "pages" => 3324585,
+    "queued-massmessages" => 0,
+    "users" => 1662724
+  },
+  "astwiki" => %{
+    "activeusers" => 111,
+    "admins" => 7,
+    "articles" => 137283,
+    "cirrussearch-article-words" => 84925385,
+    "edits" => 4361801,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 243946,
+    "queued-massmessages" => 0,
+    "users" => 133758
+  },
+  "miwiki" => %{
+    "activeusers" => 24,
+    "admins" => 2,
+    "articles" => 7993,
+    "cirrussearch-article-words" => 792291,
+    "edits" => 165914,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 15371,
+    "queued-massmessages" => 0,
+    "users" => 20973
+  },
+  "eewiki" => %{
+    "activeusers" => 19,
+    "admins" => 2,
+    "articles" => 1202,
+    "cirrussearch-article-words" => 218809,
+    "edits" => 58881,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 4145,
+    "queued-massmessages" => 0,
+    "users" => 16044
+  },
+  "gomwiki" => %{
+    "activeusers" => 15,
+    "admins" => 4,
+    "articles" => 3614,
+    "cirrussearch-article-words" => 2033266,
+    "edits" => 213459,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 8863,
+    "queued-massmessages" => 0,
+    "users" => 11036
+  },
+  "bswiki" => %{
+    "activeusers" => 162,
+    "admins" => 9,
+    "articles" => 94969,
+    "cirrussearch-article-words" => 38720299,
+    "edits" => 3695693,
+    "images" => 5273,
+    "jobs" => 0,
+    "pages" => 375542,
+    "queued-massmessages" => 0,
+    "users" => 168760
+  },
+  "iuwiki" => %{
+    "activeusers" => 23,
+    "admins" => 2,
+    "articles" => 426,
+    "cirrussearch-article-words" => 23838,
+    "edits" => 48229,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 2987,
+    "queued-massmessages" => 0,
+    "users" => 23917
+  },
+  "mhrwiki" => %{
+    "activeusers" => 19,
+    "admins" => 1,
+    "articles" => 11337,
+    "cirrussearch-article-words" => 2056036,
+    "edits" => 199954,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 30916,
+    "queued-massmessages" => 0,
+    "users" => 15628
+  },
+  "nnwiki" => %{
+    "activeusers" => 146,
+    "admins" => 14,
+    "articles" => 174701,
+    "cirrussearch-article-words" => 40765913,
+    "edits" => 3597290,
+    "images" => 10,
+    "jobs" => 0,
+    "pages" => 394985,
+    "queued-massmessages" => 0,
+    "users" => 143004
+  },
+  "olowiki" => %{
+    "activeusers" => 19,
+    "admins" => 2,
+    "articles" => 4559,
+    "cirrussearch-article-words" => 403968,
+    "edits" => 37748,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 13455,
+    "queued-massmessages" => 0,
+    "users" => 7889
+  },
+  "rnwiki" => %{
+    "activeusers" => 20,
+    "admins" => 1,
+    "articles" => 703,
+    "cirrussearch-article-words" => 80375,
+    "edits" => 25222,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 2697,
+    "queued-massmessages" => 0,
+    "users" => 10721
+  },
+  "trvwiki" => %{
+    "activeusers" => 14,
+    "admins" => 1,
+    "articles" => 1201,
+    "cirrussearch-article-words" => 791322,
+    "edits" => 103430,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 2204,
+    "queued-massmessages" => 0,
+    "users" => 2520
+  },
+  "vlswiki" => %{
+    "activeusers" => 27,
+    "admins" => 4,
+    "articles" => 8110,
+    "cirrussearch-article-words" => 1721491,
+    "edits" => 321505,
+    "images" => 348,
+    "jobs" => 0,
+    "pages" => 22200,
+    "queued-massmessages" => 0,
+    "users" => 28923
+  },
+  "twwiki" => %{
+    "activeusers" => 21,
+    "admins" => 2,
+    "articles" => 4200,
+    "cirrussearch-article-words" => 2031271,
+    "edits" => 128771,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 7947,
+    "queued-massmessages" => 0,
+    "users" => 17088
+  },
+  "arcwiki" => %{
+    "activeusers" => 18,
+    "admins" => 2,
+    "articles" => 1915,
+    "cirrussearch-article-words" => 61947,
+    "edits" => 96952,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 6560,
+    "queued-massmessages" => 0,
+    "users" => 22418
+  },
+  "hrwiki" => %{
+    "activeusers" => 481,
+    "admins" => 15,
+    "articles" => 225826,
+    "cirrussearch-article-words" => 73254106,
+    "edits" => 7191751,
+    "images" => 21656,
+    "jobs" => 0,
+    "pages" => 483880,
+    "queued-massmessages" => 0,
+    "users" => 328306
+  },
+  "kuwiki" => %{
+    "activeusers" => 80,
+    "admins" => 3,
+    "articles" => 90338,
+    "cirrussearch-article-words" => 9107087,
+    "edits" => 1937090,
+    "images" => 556,
+    "jobs" => 0,
+    "pages" => 286217,
+    "queued-massmessages" => 0,
+    "users" => 81965
+  },
+  "crhwiki" => %{
+    "activeusers" => 36,
+    "admins" => 2,
+    "articles" => 28569,
+    "cirrussearch-article-words" => 1245138,
+    "edits" => 233504,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 55818,
+    "queued-massmessages" => 0,
+    "users" => 35486
+  },
+  "newiki" => %{
+    "activeusers" => 93,
+    "admins" => 5,
+    "articles" => 29894,
+    "cirrussearch-article-words" => 8166437,
+    "edits" => 1280242,
+    "images" => 1445,
+    "jobs" => 0,
+    "pages" => 111097,
+    "queued-massmessages" => 0,
+    "users" => 71461
+  },
+  "arywiki" => %{
+    "activeusers" => 52,
+    "admins" => 4,
+    "articles" => 10586,
+    "cirrussearch-article-words" => 2406302,
+    "edits" => 430654,
+    "images" => 302,
+    "jobs" => 0,
+    "pages" => 85219,
+    "queued-massmessages" => 0,
+    "users" => 16195
+  },
+  "frpwiki" => %{
+    "activeusers" => 25,
+    "admins" => 2,
+    "articles" => 5805,
+    "cirrussearch-article-words" => 621245,
+    "edits" => 228788,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 17807,
+    "queued-massmessages" => 0,
+    "users" => 18117
+  },
+  "bat_smgwiki" => %{
+    "activeusers" => 22,
+    "admins" => 4,
+    "articles" => 17268,
+    "cirrussearch-article-words" => 669862,
+    "edits" => 361945,
+    "images" => 109,
+    "jobs" => 0,
+    "pages" => 30037,
+    "queued-massmessages" => 0,
+    "users" => 27632
+  },
+  "bawiki" => %{
+    "activeusers" => 73,
+    "admins" => 4,
+    "articles" => 63810,
+    "cirrussearch-article-words" => 28103418,
+    "edits" => 1282299,
+    "images" => 1430,
+    "jobs" => 0,
+    "pages" => 183577,
+    "queued-massmessages" => 0,
+    "users" => 44233
+  },
+  "sylwiki" => %{
+    "activeusers" => 24,
+    "admins" => 1,
+    "articles" => 1158,
+    "cirrussearch-article-words" => 119151,
+    "edits" => 27408,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 4829,
+    "queued-massmessages" => 0,
+    "users" => 764
+  },
+  "omwiki" => %{
+    "activeusers" => 21,
+    "admins" => 1,
+    "articles" => 1930,
+    "cirrussearch-article-words" => 616314,
+    "edits" => 44405,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 5348,
+    "queued-massmessages" => 0,
+    "users" => 12292
+  },
+  "taywiki" => %{
+    "activeusers" => 8,
+    "admins" => 1,
+    "articles" => 2584,
+    "cirrussearch-article-words" => 607937,
+    "edits" => 61350,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 3235,
+    "queued-massmessages" => 0,
+    "users" => 2323
+  },
+  "kswiki" => %{
+    "activeusers" => 30,
+    "admins" => 2,
+    "articles" => 6918,
+    "cirrussearch-article-words" => 823462,
+    "edits" => 108523,
+    "images" => 48,
+    "jobs" => 0,
+    "pages" => 17386,
+    "queued-massmessages" => 0,
+    "users" => 12418
+  },
+  "bjnwiki" => %{
+    "activeusers" => 39,
+    "admins" => 3,
+    "articles" => 11242,
+    "cirrussearch-article-words" => 1198010,
+    "edits" => 102930,
+    "images" => 2,
+    "jobs" => 0,
+    "pages" => 33928,
+    "queued-massmessages" => 0,
+    "users" => 15949
+  },
+  "avkwiki" => %{
+    "activeusers" => 21,
+    "admins" => 6,
+    "articles" => 29892,
+    "cirrussearch-article-words" => 2747891,
+    "edits" => 145983,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 36323,
+    "queued-massmessages" => 0,
+    "users" => 6914
+  },
+  "maiwiki" => %{
+    "activeusers" => 40,
+    "admins" => 5,
+    "articles" => 14212,
+    "cirrussearch-article-words" => 1686521,
+    "edits" => 267385,
+    "images" => 125,
+    "jobs" => 0,
+    "pages" => 44381,
+    "queued-massmessages" => 0,
+    "users" => 15536
+  },
+  "fiwiki" => %{
+    "activeusers" => 1568,
+    "admins" => 35,
+    "articles" => 594263,
+    "cirrussearch-article-words" => 176088037,
+    "edits" => 23184116,
+    "images" => 78252,
+    "jobs" => 0,
+    "pages" => 1536705,
+    "queued-massmessages" => 0,
+    "users" => 603135
+  },
+  "tddwiki" => %{
+    "activeusers" => 7,
+    "admins" => 1,
+    "articles" => 341,
+    "cirrussearch-article-words" => 108725,
+    "edits" => 5933,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 1394,
+    "queued-massmessages" => 0,
+    "users" => 551
+  },
+  "hywwiki" => %{
+    "activeusers" => 43,
+    "admins" => 5,
+    "articles" => 12309,
+    "cirrussearch-article-words" => 5549689,
+    "edits" => 228269,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 27005,
+    "queued-massmessages" => 0,
+    "users" => 12401
+  },
+  "gotwiki" => %{
+    "activeusers" => 23,
+    "admins" => 1,
+    "articles" => 898,
+    "cirrussearch-article-words" => 95092,
+    "edits" => 47238,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 3775,
+    "queued-massmessages" => 0,
+    "users" => 21427
+  },
+  "pwnwiki" => %{
+    "activeusers" => 7,
+    "admins" => 1,
+    "articles" => 373,
+    "cirrussearch-article-words" => 133522,
+    "edits" => 12913,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 629,
+    "queued-massmessages" => 0,
+    "users" => 2231
+  },
+  "mrjwiki" => %{
+    "activeusers" => 15,
+    "admins" => 1,
+    "articles" => 10432,
+    "cirrussearch-article-words" => 660479,
+    "edits" => 106901,
+    "images" => 0,
+    "jobs" => 0,
+    "pages" => 20767,
+    "queued-massmessages" => 0,
+    ...
+  },
+  "etwiki" => %{
+    "activeusers" => 682,
+    "admins" => 34,
+    "articles" => 252345,
+    "cirrussearch-article-words" => 62690698,
+    "edits" => 6869894,
+    "images" => 662,
+    "jobs" => 0,
+    "pages" => 593653,
+    ...
+  },
+  "srwiki" => %{
+    "activeusers" => 2343,
+    "admins" => 14,
+    "articles" => 706868,
+    "cirrussearch-article-words" => 215682465,
+    "edits" => 29850351,
+    "images" => 39364,
+    "jobs" => 0,
+    ...
+  },
+  "extwiki" => %{
+    "activeusers" => 22,
+    "admins" => 1,
+    "articles" => 3916,
+    "cirrussearch-article-words" => 978112,
+    "edits" => 135827,
+    "images" => 0,
+    ...
+  },
+  "mgwiki" => %{
+    "activeusers" => 47,
+    "admins" => 2,
+    "articles" => 99588,
+    "cirrussearch-article-words" => 10709571,
+    "edits" => 1101047,
+    ...
+  },
+  "mtwiki" => %{
+    "activeusers" => 57,
+    "admins" => 4,
+    "articles" => 7351,
+    "cirrussearch-article-words" => 7757120,
+    ...
+  },
+  "kgewiki" => %{"activeusers" => 9, "admins" => 0, "articles" => 2561, ...},
+  "sahwiki" => %{"activeusers" => 37, "admins" => 4, ...},
+  "bowiki" => %{"activeusers" => 35, ...},
+  "thwiki" => %{...},
+  ...
+}
 ```
 
 ## Fetch Content Translation statistics
 
-There used to be an API `contenttranslationstats` but this was disabled due to performance concerns (see task [T392839](https://phabricator.wikimedia.org/T392839)).  Instead, we'll have to iterate over all language pairs.
+There used to be an API `contenttranslationstats` but this was disabled due to performance concerns (see task [T392839](https://phabricator.wikimedia.org/T392839)).  We're forced to use a stored response here, dated 2023-06-12.
+
+In the future we should be able to refresh the data using sources being developed for a new [public dashboard for Content Translation](https://phabricator.wikimedia.org/T365813).
 
 ```elixir
-{:ok, %{result: result}} =
-  Wiki.Action.new(:enwiki, accumulate: true)
-  |> Wiki.Action.get(action: :query, list: :cxpublishedtranslations, from: "es", to: "ca")
+content_translation_pairs =
+  File.stream!(Path.join(__DIR__, "content_translation_stats.csv"))
+  |> CSV.decode!(headers: true)
+  |> Enum.filter(&(&1["status"] == "published"))
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ab",
+    "status" => "published",
+    "targetLanguage" => "id",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ace",
+    "status" => "published",
+    "targetLanguage" => "bn",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ace",
+    "status" => "published",
+    "targetLanguage" => "id",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ace",
+    "status" => "published",
+    "targetLanguage" => "nov",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ace",
+    "status" => "published",
+    "targetLanguage" => "tn",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ady",
+    "status" => "published",
+    "targetLanguage" => "kbd",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "am",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "ar",
+    "translators" => "1"
+  },
+  %{
+    "count" => "2",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "ast",
+    "translators" => "1"
+  },
+  %{
+    "count" => "3",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "ca",
+    "translators" => "3"
+  },
+  %{
+    "count" => "2",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "ceb",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "da",
+    "translators" => "1"
+  },
+  %{
+    "count" => "3",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "de",
+    "translators" => "3"
+  },
+  %{
+    "count" => "44",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "en",
+    "translators" => "23"
+  },
+  %{
+    "count" => "6",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "eo",
+    "translators" => "1"
+  },
+  %{
+    "count" => "4",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "es",
+    "translators" => "4"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "fi",
+    "translators" => "1"
+  },
+  %{
+    "count" => "6",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "fr",
+    "translators" => "6"
+  },
+  %{
+    "count" => "4",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "gl",
+    "translators" => "2"
+  },
+  %{
+    "count" => "3",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "haw",
+    "translators" => "3"
+  },
+  %{
+    "count" => "2",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "he",
+    "translators" => "2"
+  },
+  %{
+    "count" => "7",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "hu",
+    "translators" => "2"
+  },
+  %{
+    "count" => "7",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "km",
+    "translators" => "1"
+  },
+  %{
+    "count" => "2",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "nds-nl",
+    "translators" => "1"
+  },
+  %{
+    "count" => "21",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "nl",
+    "translators" => "14"
+  },
+  %{
+    "count" => "9",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "nso",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "pa",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "pt",
+    "translators" => "1"
+  },
+  %{
+    "count" => "2",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "ro",
+    "translators" => "2"
+  },
+  %{
+    "count" => "7",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "ru",
+    "translators" => "5"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "si",
+    "translators" => "1"
+  },
+  %{
+    "count" => "4",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "st",
+    "translators" => "4"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "tn",
+    "translators" => "1"
+  },
+  %{
+    "count" => "3",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "tr",
+    "translators" => "3"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "tt",
+    "translators" => "1"
+  },
+  %{
+    "count" => "4",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "uk",
+    "translators" => "2"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "uz",
+    "translators" => "1"
+  },
+  %{
+    "count" => "4",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "xh",
+    "translators" => "2"
+  },
+  %{
+    "count" => "2",
+    "sourceLanguage" => "af",
+    "status" => "published",
+    "targetLanguage" => "zu",
+    "translators" => "2"
+  },
+  %{
+    "count" => "6",
+    "sourceLanguage" => "ak",
+    "status" => "published",
+    "targetLanguage" => "en",
+    "translators" => "5"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ak",
+    "status" => "published",
+    "targetLanguage" => "hif",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "ak",
+    "status" => "published",
+    "targetLanguage" => "tw",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "am",
+    "status" => "published",
+    "targetLanguage" => "ar",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "am",
+    "status" => "published",
+    "targetLanguage" => "cr",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "am",
+    "status" => "published",
+    "targetLanguage" => "en",
+    "translators" => "1"
+  },
+  %{
+    "count" => "1",
+    "sourceLanguage" => "am",
+    "status" => "published",
+    "targetLanguage" => "es",
+    ...
+  },
+  %{"count" => "2", "sourceLanguage" => "am", "status" => "published", ...},
+  %{"count" => "1", "sourceLanguage" => "am", ...},
+  %{"count" => "1", ...},
+  %{...},
+  ...
+]
+```
+
+## Aggregate by language
+
+Here we collapse the raw data into a summary for each language, with the following aggregate calculations:
+
+* Number of article pages in language edition
+* Number of active editors for language
+* Number of outgoing translations from language
+* Number of incoming translations to language
+* Translation hegemony (outgoing : incoming)
+
+```elixir
+lang_stats =
+  wikipedias
+  |> Enum.reject(&(&1.dbname == "simplewiki"))
+  |> Enum.map(fn %{lang: lang, dbname: dbname} ->
+    stats = %{
+      article_count: site_stats[dbname]["articles"],
+      active_editor_count: site_stats[dbname]["activeusers"],
+      outgoing_translations:
+        content_translation_pairs
+        |> Enum.filter(&(&1["sourceLanguage"] == lang))
+        |> Enum.sum_by(&String.to_integer(&1["count"])),
+      incoming_translations:
+        content_translation_pairs
+        |> Enum.filter(&(&1["targetLanguage"] == lang))
+        |> Enum.sum_by(&String.to_integer(&1["count"]))
+    }
+
+    stats =
+      Map.put(
+        stats,
+        :translation_hegemony,
+        case stats.incoming_translations do
+          0 -> 0
+          _ -> stats.outgoing_translations / stats.incoming_translations
+        end
+      )
+
+    {lang, stats}
+  end)
+  |> Enum.into(%{})
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{
+  "bi" => %{
+    article_count: 1469,
+    active_editor_count: 16,
+    outgoing_translations: 0,
+    incoming_translations: 23,
+    translation_hegemony: 0.0
+  },
+  "or" => %{
+    article_count: 19557,
+    active_editor_count: 50,
+    outgoing_translations: 49,
+    incoming_translations: 2756,
+    translation_hegemony: 0.017779390420899856
+  },
+  "ksh" => %{
+    article_count: 3001,
+    active_editor_count: 11,
+    outgoing_translations: 0,
+    incoming_translations: 15,
+    translation_hegemony: 0.0
+  },
+  "io" => %{
+    article_count: 56346,
+    active_editor_count: 62,
+    outgoing_translations: 2,
+    incoming_translations: 60,
+    translation_hegemony: 0.03333333333333333
+  },
+  "pdc" => %{
+    article_count: 2042,
+    active_editor_count: 33,
+    outgoing_translations: 1,
+    incoming_translations: 28,
+    translation_hegemony: 0.03571428571428571
+  },
+  "haw" => %{
+    article_count: 2899,
+    active_editor_count: 21,
+    outgoing_translations: 15,
+    incoming_translations: 184,
+    translation_hegemony: 0.08152173913043478
+  },
+  "kl" => %{
+    article_count: 246,
+    active_editor_count: 25,
+    outgoing_translations: 1,
+    incoming_translations: 11,
+    translation_hegemony: 0.09090909090909091
+  },
+  "hak" => %{
+    article_count: 10349,
+    active_editor_count: 29,
+    outgoing_translations: 4,
+    incoming_translations: 1066,
+    translation_hegemony: 0.00375234521575985
+  },
+  "vls" => %{
+    article_count: 8110,
+    active_editor_count: 27,
+    outgoing_translations: 5,
+    incoming_translations: 14,
+    translation_hegemony: 0.35714285714285715
+  },
+  "ace" => %{
+    article_count: 13061,
+    active_editor_count: 39,
+    outgoing_translations: 4,
+    incoming_translations: 52,
+    translation_hegemony: 0.07692307692307693
+  },
+  "pt" => %{
+    article_count: 1146763,
+    active_editor_count: 8511,
+    outgoing_translations: 16569,
+    incoming_translations: 53894,
+    translation_hegemony: 0.30743682042527926
+  },
+  "et" => %{
+    article_count: 252345,
+    active_editor_count: 682,
+    outgoing_translations: 726,
+    incoming_translations: 1351,
+    translation_hegemony: 0.537379718726869
+  },
+  "cbk" => %{
+    article_count: 3226,
+    active_editor_count: 25,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  "arc" => %{
+    article_count: 1915,
+    active_editor_count: 18,
+    outgoing_translations: 1,
+    incoming_translations: 5,
+    translation_hegemony: 0.2
+  },
+  "vro" => %{
+    article_count: 6799,
+    active_editor_count: 36,
+    outgoing_translations: 2,
+    incoming_translations: 211,
+    translation_hegemony: 0.009478672985781991
+  },
+  "ff" => %{
+    article_count: 8561,
+    active_editor_count: 47,
+    outgoing_translations: 0,
+    incoming_translations: 81,
+    translation_hegemony: 0.0
+  },
+  "gpe" => %{
+    article_count: 2975,
+    active_editor_count: 25,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  "pwn" => %{
+    article_count: 373,
+    active_editor_count: 7,
+    outgoing_translations: 0,
+    incoming_translations: 2,
+    translation_hegemony: 0.0
+  },
+  "chy" => %{
+    article_count: 722,
+    active_editor_count: 12,
+    outgoing_translations: 0,
+    incoming_translations: 6,
+    translation_hegemony: 0.0
+  },
+  "nup" => %{
+    article_count: 283,
+    active_editor_count: 20,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  "sh" => %{
+    article_count: 460706,
+    active_editor_count: 531,
+    outgoing_translations: 357,
+    incoming_translations: 413,
+    translation_hegemony: 0.864406779661017
+  },
+  "gom" => %{
+    article_count: 3614,
+    active_editor_count: 15,
+    outgoing_translations: 1,
+    incoming_translations: 77,
+    translation_hegemony: 0.012987012987012988
+  },
+  "ht" => %{
+    article_count: 71005,
+    active_editor_count: 51,
+    outgoing_translations: 34,
+    incoming_translations: 651,
+    translation_hegemony: 0.05222734254992319
+  },
+  "stq" => %{
+    article_count: 4128,
+    active_editor_count: 20,
+    outgoing_translations: 0,
+    incoming_translations: 10,
+    translation_hegemony: 0.0
+  },
+  "tig" => %{
+    article_count: 39,
+    active_editor_count: 6,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  "ny" => %{
+    article_count: 1068,
+    active_editor_count: 16,
+    outgoing_translations: 3,
+    incoming_translations: 90,
+    translation_hegemony: 0.03333333333333333
+  },
+  "tk" => %{
+    article_count: 6937,
+    active_editor_count: 35,
+    outgoing_translations: 33,
+    incoming_translations: 154,
+    translation_hegemony: 0.21428571428571427
+  },
+  "dz" => %{
+    article_count: 388,
+    active_editor_count: 24,
+    outgoing_translations: 1,
+    incoming_translations: 13,
+    translation_hegemony: 0.07692307692307693
+  },
+  "srn" => %{
+    article_count: 1131,
+    active_editor_count: 9,
+    outgoing_translations: 0,
+    incoming_translations: 9,
+    translation_hegemony: 0.0
+  },
+  "ja" => %{
+    article_count: 1462048,
+    active_editor_count: 12764,
+    outgoing_translations: 6565,
+    incoming_translations: 25946,
+    translation_hegemony: 0.2530255145301781
+  },
+  "nv" => %{
+    article_count: 22661,
+    active_editor_count: 21,
+    outgoing_translations: 0,
+    incoming_translations: 5,
+    translation_hegemony: 0.0
+  },
+  "tg" => %{
+    article_count: 115296,
+    active_editor_count: 85,
+    outgoing_translations: 612,
+    incoming_translations: 3897,
+    translation_hegemony: 0.15704387990762125
+  },
+  "fj" => %{
+    article_count: 1580,
+    active_editor_count: 12,
+    outgoing_translations: 0,
+    incoming_translations: 22,
+    translation_hegemony: 0.0
+  },
+  "ang" => %{
+    article_count: 4793,
+    active_editor_count: 51,
+    outgoing_translations: 4,
+    incoming_translations: 40,
+    translation_hegemony: 0.1
+  },
+  "ban" => %{
+    article_count: 29439,
+    active_editor_count: 66,
+    outgoing_translations: 5,
+    incoming_translations: 21,
+    translation_hegemony: 0.23809523809523808
+  },
+  "km" => %{
+    article_count: 11418,
+    active_editor_count: 63,
+    outgoing_translations: 28,
+    incoming_translations: 1202,
+    translation_hegemony: 0.02329450915141431
+  },
+  "tr" => %{
+    article_count: 635666,
+    active_editor_count: 2583,
+    outgoing_translations: 7813,
+    incoming_translations: 64550,
+    translation_hegemony: 0.12103795507358636
+  },
+  "dsb" => %{
+    article_count: 3429,
+    active_editor_count: 27,
+    outgoing_translations: 4,
+    incoming_translations: 27,
+    translation_hegemony: 0.14814814814814814
+  },
+  "ky" => %{
+    article_count: 75953,
+    active_editor_count: 99,
+    outgoing_translations: 64,
+    incoming_translations: 734,
+    translation_hegemony: 0.08719346049046321
+  },
+  "tpi" => %{
+    article_count: 1387,
+    active_editor_count: 14,
+    outgoing_translations: 2,
+    incoming_translations: 62,
+    translation_hegemony: 0.03225806451612903
+  },
+  "mi" => %{
+    article_count: 7993,
+    active_editor_count: 24,
+    outgoing_translations: 3,
+    incoming_translations: 55,
+    translation_hegemony: 0.05454545454545454
+  },
+  "os" => %{
+    article_count: 20407,
+    active_editor_count: 24,
+    outgoing_translations: 4,
+    incoming_translations: 230,
+    translation_hegemony: 0.017391304347826087
+  },
+  "vo" => %{
+    article_count: 41974,
+    active_editor_count: 30,
+    outgoing_translations: 8,
+    incoming_translations: 28,
+    translation_hegemony: 0.2857142857142857
+  },
+  "szy" => %{
+    article_count: 2737,
+    active_editor_count: 16,
+    outgoing_translations: 1,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  "mad" => %{
+    article_count: 1761,
+    active_editor_count: 41,
+    outgoing_translations: 1,
+    incoming_translations: 1,
+    translation_hegemony: 1.0
+  },
+  "bg" => %{
+    article_count: 303862,
+    active_editor_count: 653,
+    outgoing_translations: 1374,
+    incoming_translations: 4284,
+    ...
+  },
+  "tyv" => %{article_count: 3541, active_editor_count: 23, outgoing_translations: 2, ...},
+  "rup" => %{article_count: 1390, active_editor_count: 27, ...},
+  "pnb" => %{article_count: 74084, ...},
+  "ilo" => %{...},
+  ...
+}
 ```
 
 ```elixir
-length(result["result"]["translations"])
+flat_lang_stats =
+  lang_stats
+  |> Enum.map(fn {lang, stats} ->
+    Map.put(stats, :lang, lang)
+  end)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %{
+    lang: "en",
+    article_count: 6994406,
+    active_editor_count: 118797,
+    outgoing_translations: 1093935,
+    incoming_translations: 28479,
+    translation_hegemony: 38.41198778046982
+  },
+  %{
+    lang: "rn",
+    article_count: 703,
+    active_editor_count: 20,
+    outgoing_translations: 1,
+    incoming_translations: 10,
+    translation_hegemony: 0.1
+  },
+  %{
+    lang: "xal",
+    article_count: 1665,
+    active_editor_count: 15,
+    outgoing_translations: 0,
+    incoming_translations: 28,
+    translation_hegemony: 0.0
+  },
+  %{
+    lang: "bar",
+    article_count: 27181,
+    active_editor_count: 55,
+    outgoing_translations: 8,
+    incoming_translations: 526,
+    translation_hegemony: 0.015209125475285171
+  },
+  %{
+    lang: "tet",
+    article_count: 1372,
+    active_editor_count: 11,
+    outgoing_translations: 0,
+    incoming_translations: 36,
+    translation_hegemony: 0.0
+  },
+  %{
+    lang: "is",
+    article_count: 60160,
+    active_editor_count: 146,
+    outgoing_translations: 123,
+    incoming_translations: 424,
+    translation_hegemony: 0.29009433962264153
+  },
+  %{
+    lang: "bdr",
+    article_count: 233,
+    active_editor_count: 5,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  %{
+    lang: "nah",
+    article_count: 4269,
+    active_editor_count: 21,
+    outgoing_translations: 1,
+    incoming_translations: 90,
+    translation_hegemony: 0.011111111111111112
+  },
+  %{
+    lang: "pms",
+    article_count: 70341,
+    active_editor_count: 30,
+    outgoing_translations: 7,
+    incoming_translations: 25,
+    translation_hegemony: 0.28
+  },
+  %{
+    lang: "sv",
+    article_count: 2609829,
+    active_editor_count: 1942,
+    outgoing_translations: 4564,
+    incoming_translations: 4629,
+    translation_hegemony: 0.9859580903002808
+  },
+  %{
+    lang: "te",
+    article_count: 112810,
+    active_editor_count: 162,
+    outgoing_translations: 103,
+    incoming_translations: 5552,
+    translation_hegemony: 0.01855187319884726
+  },
+  %{
+    lang: "zh",
+    article_count: 1476616,
+    active_editor_count: 6913,
+    outgoing_translations: 7042,
+    incoming_translations: 34371,
+    translation_hegemony: 0.2048820226353612
+  },
+  %{
+    lang: "bho",
+    article_count: 8816,
+    active_editor_count: 35,
+    outgoing_translations: 4,
+    incoming_translations: 281,
+    translation_hegemony: 0.014234875444839857
+  },
+  %{
+    lang: "wa",
+    article_count: 12624,
+    active_editor_count: 32,
+    outgoing_translations: 14,
+    incoming_translations: 15,
+    translation_hegemony: 0.9333333333333333
+  },
+  %{
+    lang: "th",
+    article_count: 173801,
+    active_editor_count: 1144,
+    outgoing_translations: 1324,
+    incoming_translations: 5862,
+    translation_hegemony: 0.22586148072330262
+  },
+  %{
+    lang: "dga",
+    article_count: 2063,
+    active_editor_count: 13,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  %{
+    lang: "ga",
+    article_count: 61756,
+    active_editor_count: 91,
+    outgoing_translations: 56,
+    incoming_translations: 2531,
+    translation_hegemony: 0.022125642038719872
+  },
+  %{
+    lang: "shn",
+    article_count: 13828,
+    active_editor_count: 14,
+    outgoing_translations: 1,
+    incoming_translations: 12,
+    translation_hegemony: 0.08333333333333333
+  },
+  %{
+    lang: "ckb",
+    article_count: 76742,
+    active_editor_count: 135,
+    outgoing_translations: 141,
+    incoming_translations: 4244,
+    translation_hegemony: 0.03322337417530632
+  },
+  %{
+    lang: "lg",
+    article_count: 3411,
+    active_editor_count: 26,
+    outgoing_translations: 4,
+    incoming_translations: 958,
+    translation_hegemony: 0.0041753653444676405
+  },
+  %{
+    lang: "got",
+    article_count: 898,
+    active_editor_count: 23,
+    outgoing_translations: 3,
+    incoming_translations: 33,
+    translation_hegemony: 0.09090909090909091
+  },
+  %{
+    lang: "ary",
+    article_count: 10586,
+    active_editor_count: 52,
+    outgoing_translations: 35,
+    incoming_translations: 327,
+    translation_hegemony: 0.10703363914373089
+  },
+  %{
+    lang: "ml",
+    article_count: 86775,
+    active_editor_count: 212,
+    outgoing_translations: 212,
+    incoming_translations: 10546,
+    translation_hegemony: 0.02010240849611227
+  },
+  %{
+    lang: "avk",
+    article_count: 29892,
+    active_editor_count: 21,
+    outgoing_translations: 1,
+    incoming_translations: 4,
+    translation_hegemony: 0.25
+  },
+  %{
+    lang: "egl",
+    article_count: 13195,
+    active_editor_count: 24,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  %{
+    lang: "ay",
+    article_count: 5176,
+    active_editor_count: 28,
+    outgoing_translations: 0,
+    incoming_translations: 31,
+    translation_hegemony: 0.0
+  },
+  %{
+    lang: "scn",
+    article_count: 26349,
+    active_editor_count: 36,
+    outgoing_translations: 5,
+    incoming_translations: 24,
+    translation_hegemony: 0.20833333333333334
+  },
+  %{
+    lang: "lad",
+    article_count: 3841,
+    active_editor_count: 30,
+    outgoing_translations: 7,
+    incoming_translations: 23,
+    translation_hegemony: 0.30434782608695654
+  },
+  %{
+    lang: "kv",
+    article_count: 5697,
+    active_editor_count: 19,
+    outgoing_translations: 3,
+    incoming_translations: 7,
+    translation_hegemony: 0.42857142857142855
+  },
+  %{
+    lang: "pap",
+    article_count: 4650,
+    active_editor_count: 27,
+    outgoing_translations: 3,
+    incoming_translations: 30,
+    translation_hegemony: 0.1
+  },
+  %{
+    lang: "yo",
+    article_count: 35200,
+    active_editor_count: 76,
+    outgoing_translations: 13,
+    incoming_translations: 1600,
+    translation_hegemony: 0.008125
+  },
+  %{
+    lang: "sl",
+    article_count: 192888,
+    active_editor_count: 317,
+    outgoing_translations: 396,
+    incoming_translations: 3133,
+    translation_hegemony: 0.12639642515161187
+  },
+  %{
+    lang: "ar",
+    article_count: 1262642,
+    active_editor_count: 3841,
+    outgoing_translations: 5080,
+    incoming_translations: 73175,
+    translation_hegemony: 0.06942261701400751
+  },
+  %{
+    lang: "pag",
+    article_count: 2615,
+    active_editor_count: 17,
+    outgoing_translations: 2,
+    incoming_translations: 17,
+    translation_hegemony: 0.11764705882352941
+  },
+  %{
+    lang: "ku",
+    article_count: 90338,
+    active_editor_count: 80,
+    outgoing_translations: 198,
+    incoming_translations: 1583,
+    translation_hegemony: 0.12507896399241947
+  },
+  %{
+    lang: "lij",
+    article_count: 11400,
+    active_editor_count: 30,
+    outgoing_translations: 2,
+    incoming_translations: 65,
+    translation_hegemony: 0.03076923076923077
+  },
+  %{
+    lang: "st",
+    article_count: 1407,
+    active_editor_count: 24,
+    outgoing_translations: 6,
+    incoming_translations: 68,
+    translation_hegemony: 0.08823529411764706
+  },
+  %{
+    lang: "fy",
+    article_count: 56825,
+    active_editor_count: 74,
+    outgoing_translations: 52,
+    incoming_translations: 158,
+    translation_hegemony: 0.3291139240506329
+  },
+  %{
+    lang: "koi",
+    article_count: 3469,
+    active_editor_count: 13,
+    outgoing_translations: 0,
+    incoming_translations: 3,
+    translation_hegemony: 0.0
+  },
+  %{
+    lang: "olo",
+    article_count: 4559,
+    active_editor_count: 19,
+    outgoing_translations: 2,
+    incoming_translations: 7,
+    translation_hegemony: 0.2857142857142857
+  },
+  %{
+    lang: "nrf",
+    article_count: 5036,
+    active_editor_count: 15,
+    outgoing_translations: 0,
+    incoming_translations: 0,
+    translation_hegemony: 0
+  },
+  %{
+    lang: "fi",
+    article_count: 594263,
+    active_editor_count: 1568,
+    outgoing_translations: 1341,
+    incoming_translations: 2782,
+    translation_hegemony: 0.4820273184759166
+  },
+  %{
+    lang: "kab",
+    article_count: 6912,
+    active_editor_count: 28,
+    outgoing_translations: 2,
+    incoming_translations: 190,
+    translation_hegemony: 0.010526315789473684
+  },
+  %{
+    lang: "om",
+    article_count: 1930,
+    active_editor_count: 21,
+    outgoing_translations: 9,
+    incoming_translations: 347,
+    translation_hegemony: 0.025936599423631124
+  },
+  %{
+    lang: "ee",
+    article_count: 1202,
+    active_editor_count: 19,
+    outgoing_translations: 0,
+    incoming_translations: 29,
+    ...
+  },
+  %{lang: "am", article_count: 15419, active_editor_count: 52, outgoing_translations: 126, ...},
+  %{lang: "kbp", article_count: 1714, active_editor_count: 12, ...},
+  %{lang: "smn", article_count: 6227, ...},
+  %{lang: "mwl", ...},
+  %{...},
+  ...
+]
+```
+
+Save the aggregated data back to disk so it can be used by other packages.
+
+```elixir
+flat_lang_stats
+|> CSV.encode(
+  headers: ~w(lang article_count active_editor_count outgoing_translations incoming_translations translation_hegemony)a
+)
+|> Enum.into(File.stream!(Path.join(__DIR__, "aggregate_stats.csv")))
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%File.Stream{
+  path: "/home/adamw/projects/translation-imbalances/wiki-workshop-2025/aggregate_stats.csv",
+  modes: [:raw, :read_ahead, :binary],
+  line_or_bytes: :line,
+  raw: true,
+  node: :"livebook_izzppkkb--g32eaokp@127.0.0.1"
+}
+```
+
+## Scatterplots of translation hegemony
+
+```elixir
+alias VegaLite, as: Vl
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+VegaLite
+```
+
+```elixir
+zero_safe =
+  flat_lang_stats
+  |> Enum.reject(& &1.translation_hegemony == 0)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %{
+    lang: "en",
+    article_count: 6994406,
+    active_editor_count: 118797,
+    outgoing_translations: 1093935,
+    incoming_translations: 28479,
+    translation_hegemony: 38.41198778046982
+  },
+  %{
+    lang: "rn",
+    article_count: 703,
+    active_editor_count: 20,
+    outgoing_translations: 1,
+    incoming_translations: 10,
+    translation_hegemony: 0.1
+  },
+  %{
+    lang: "bar",
+    article_count: 27181,
+    active_editor_count: 55,
+    outgoing_translations: 8,
+    incoming_translations: 526,
+    translation_hegemony: 0.015209125475285171
+  },
+  %{
+    lang: "is",
+    article_count: 60160,
+    active_editor_count: 146,
+    outgoing_translations: 123,
+    incoming_translations: 424,
+    translation_hegemony: 0.29009433962264153
+  },
+  %{
+    lang: "nah",
+    article_count: 4269,
+    active_editor_count: 21,
+    outgoing_translations: 1,
+    incoming_translations: 90,
+    translation_hegemony: 0.011111111111111112
+  },
+  %{
+    lang: "pms",
+    article_count: 70341,
+    active_editor_count: 30,
+    outgoing_translations: 7,
+    incoming_translations: 25,
+    translation_hegemony: 0.28
+  },
+  %{
+    lang: "sv",
+    article_count: 2609829,
+    active_editor_count: 1942,
+    outgoing_translations: 4564,
+    incoming_translations: 4629,
+    translation_hegemony: 0.9859580903002808
+  },
+  %{
+    lang: "te",
+    article_count: 112810,
+    active_editor_count: 162,
+    outgoing_translations: 103,
+    incoming_translations: 5552,
+    translation_hegemony: 0.01855187319884726
+  },
+  %{
+    lang: "zh",
+    article_count: 1476616,
+    active_editor_count: 6913,
+    outgoing_translations: 7042,
+    incoming_translations: 34371,
+    translation_hegemony: 0.2048820226353612
+  },
+  %{
+    lang: "bho",
+    article_count: 8816,
+    active_editor_count: 35,
+    outgoing_translations: 4,
+    incoming_translations: 281,
+    translation_hegemony: 0.014234875444839857
+  },
+  %{
+    lang: "wa",
+    article_count: 12624,
+    active_editor_count: 32,
+    outgoing_translations: 14,
+    incoming_translations: 15,
+    translation_hegemony: 0.9333333333333333
+  },
+  %{
+    lang: "th",
+    article_count: 173801,
+    active_editor_count: 1144,
+    outgoing_translations: 1324,
+    incoming_translations: 5862,
+    translation_hegemony: 0.22586148072330262
+  },
+  %{
+    lang: "ga",
+    article_count: 61756,
+    active_editor_count: 91,
+    outgoing_translations: 56,
+    incoming_translations: 2531,
+    translation_hegemony: 0.022125642038719872
+  },
+  %{
+    lang: "shn",
+    article_count: 13828,
+    active_editor_count: 14,
+    outgoing_translations: 1,
+    incoming_translations: 12,
+    translation_hegemony: 0.08333333333333333
+  },
+  %{
+    lang: "ckb",
+    article_count: 76742,
+    active_editor_count: 135,
+    outgoing_translations: 141,
+    incoming_translations: 4244,
+    translation_hegemony: 0.03322337417530632
+  },
+  %{
+    lang: "lg",
+    article_count: 3411,
+    active_editor_count: 26,
+    outgoing_translations: 4,
+    incoming_translations: 958,
+    translation_hegemony: 0.0041753653444676405
+  },
+  %{
+    lang: "got",
+    article_count: 898,
+    active_editor_count: 23,
+    outgoing_translations: 3,
+    incoming_translations: 33,
+    translation_hegemony: 0.09090909090909091
+  },
+  %{
+    lang: "ary",
+    article_count: 10586,
+    active_editor_count: 52,
+    outgoing_translations: 35,
+    incoming_translations: 327,
+    translation_hegemony: 0.10703363914373089
+  },
+  %{
+    lang: "ml",
+    article_count: 86775,
+    active_editor_count: 212,
+    outgoing_translations: 212,
+    incoming_translations: 10546,
+    translation_hegemony: 0.02010240849611227
+  },
+  %{
+    lang: "avk",
+    article_count: 29892,
+    active_editor_count: 21,
+    outgoing_translations: 1,
+    incoming_translations: 4,
+    translation_hegemony: 0.25
+  },
+  %{
+    lang: "scn",
+    article_count: 26349,
+    active_editor_count: 36,
+    outgoing_translations: 5,
+    incoming_translations: 24,
+    translation_hegemony: 0.20833333333333334
+  },
+  %{
+    lang: "lad",
+    article_count: 3841,
+    active_editor_count: 30,
+    outgoing_translations: 7,
+    incoming_translations: 23,
+    translation_hegemony: 0.30434782608695654
+  },
+  %{
+    lang: "kv",
+    article_count: 5697,
+    active_editor_count: 19,
+    outgoing_translations: 3,
+    incoming_translations: 7,
+    translation_hegemony: 0.42857142857142855
+  },
+  %{
+    lang: "pap",
+    article_count: 4650,
+    active_editor_count: 27,
+    outgoing_translations: 3,
+    incoming_translations: 30,
+    translation_hegemony: 0.1
+  },
+  %{
+    lang: "yo",
+    article_count: 35200,
+    active_editor_count: 76,
+    outgoing_translations: 13,
+    incoming_translations: 1600,
+    translation_hegemony: 0.008125
+  },
+  %{
+    lang: "sl",
+    article_count: 192888,
+    active_editor_count: 317,
+    outgoing_translations: 396,
+    incoming_translations: 3133,
+    translation_hegemony: 0.12639642515161187
+  },
+  %{
+    lang: "ar",
+    article_count: 1262642,
+    active_editor_count: 3841,
+    outgoing_translations: 5080,
+    incoming_translations: 73175,
+    translation_hegemony: 0.06942261701400751
+  },
+  %{
+    lang: "pag",
+    article_count: 2615,
+    active_editor_count: 17,
+    outgoing_translations: 2,
+    incoming_translations: 17,
+    translation_hegemony: 0.11764705882352941
+  },
+  %{
+    lang: "ku",
+    article_count: 90338,
+    active_editor_count: 80,
+    outgoing_translations: 198,
+    incoming_translations: 1583,
+    translation_hegemony: 0.12507896399241947
+  },
+  %{
+    lang: "lij",
+    article_count: 11400,
+    active_editor_count: 30,
+    outgoing_translations: 2,
+    incoming_translations: 65,
+    translation_hegemony: 0.03076923076923077
+  },
+  %{
+    lang: "st",
+    article_count: 1407,
+    active_editor_count: 24,
+    outgoing_translations: 6,
+    incoming_translations: 68,
+    translation_hegemony: 0.08823529411764706
+  },
+  %{
+    lang: "fy",
+    article_count: 56825,
+    active_editor_count: 74,
+    outgoing_translations: 52,
+    incoming_translations: 158,
+    translation_hegemony: 0.3291139240506329
+  },
+  %{
+    lang: "olo",
+    article_count: 4559,
+    active_editor_count: 19,
+    outgoing_translations: 2,
+    incoming_translations: 7,
+    translation_hegemony: 0.2857142857142857
+  },
+  %{
+    lang: "fi",
+    article_count: 594263,
+    active_editor_count: 1568,
+    outgoing_translations: 1341,
+    incoming_translations: 2782,
+    translation_hegemony: 0.4820273184759166
+  },
+  %{
+    lang: "kab",
+    article_count: 6912,
+    active_editor_count: 28,
+    outgoing_translations: 2,
+    incoming_translations: 190,
+    translation_hegemony: 0.010526315789473684
+  },
+  %{
+    lang: "om",
+    article_count: 1930,
+    active_editor_count: 21,
+    outgoing_translations: 9,
+    incoming_translations: 347,
+    translation_hegemony: 0.025936599423631124
+  },
+  %{
+    lang: "am",
+    article_count: 15419,
+    active_editor_count: 52,
+    outgoing_translations: 126,
+    incoming_translations: 189,
+    translation_hegemony: 0.6666666666666666
+  },
+  %{
+    lang: "smn",
+    article_count: 6227,
+    active_editor_count: 22,
+    outgoing_translations: 16,
+    incoming_translations: 60,
+    translation_hegemony: 0.26666666666666666
+  },
+  %{
+    lang: "mwl",
+    article_count: 4280,
+    active_editor_count: 18,
+    outgoing_translations: 8,
+    incoming_translations: 443,
+    translation_hegemony: 0.01805869074492099
+  },
+  %{
+    lang: "eo",
+    article_count: 370465,
+    active_editor_count: 310,
+    outgoing_translations: 639,
+    incoming_translations: 5828,
+    translation_hegemony: 0.10964310226492793
+  },
+  %{
+    lang: "anp",
+    article_count: 1643,
+    active_editor_count: 32,
+    outgoing_translations: 1,
+    incoming_translations: 11,
+    translation_hegemony: 0.09090909090909091
+  },
+  %{
+    lang: "ab",
+    article_count: 6443,
+    active_editor_count: 30,
+    outgoing_translations: 1,
+    incoming_translations: 24,
+    translation_hegemony: 0.041666666666666664
+  },
+  %{
+    lang: "cdo",
+    article_count: 16657,
+    active_editor_count: 25,
+    outgoing_translations: 2,
+    incoming_translations: 14,
+    translation_hegemony: 0.14285714285714285
+  },
+  %{
+    lang: "gor",
+    article_count: 14822,
+    active_editor_count: 32,
+    outgoing_translations: 1,
+    incoming_translations: 69,
+    translation_hegemony: 0.014492753623188406
+  },
+  %{
+    lang: "frr",
+    article_count: 20252,
+    active_editor_count: 26,
+    outgoing_translations: 4,
+    incoming_translations: 7,
+    ...
+  },
+  %{lang: "eu", article_count: 463330, active_editor_count: 562, outgoing_translations: 926, ...},
+  %{lang: "cv", article_count: 57654, active_editor_count: 52, ...},
+  %{lang: "ug", article_count: 9558, ...},
+  %{lang: "so", ...},
+  %{...},
+  ...
+]
+```
+
+```elixir
+Vl.new(width: 400, height: 300, title: "Wiki article count vs. translation hegemony (log-log)")
+|> Vl.data_from_values(zero_safe, only: [:article_count, :translation_hegemony])
+|> Vl.mark(:point)
+|> Vl.encode_field(:x, "article_count", type: :quantitative, scale: [type: :log])
+|> Vl.encode_field(:y, "translation_hegemony", type: :quantitative, scale: [type: :log])
+```
+
+<!-- livebook:{"output":true} -->
+
+```vega-lite
+{"$schema":"https://vega.github.io/schema/vega-lite/v5.json","data":{"values":[{"article_count":6994406,"translation_hegemony":38.41198778046982},{"article_count":703,"translation_hegemony":0.1},{"article_count":27181,"translation_hegemony":0.015209125475285171},{"article_count":60160,"translation_hegemony":0.29009433962264153},{"article_count":4269,"translation_hegemony":0.011111111111111112},{"article_count":70341,"translation_hegemony":0.28},{"article_count":2609829,"translation_hegemony":0.9859580903002808},{"article_count":112810,"translation_hegemony":0.01855187319884726},{"article_count":1476616,"translation_hegemony":0.2048820226353612},{"article_count":8816,"translation_hegemony":0.014234875444839857},{"article_count":12624,"translation_hegemony":0.9333333333333333},{"article_count":173801,"translation_hegemony":0.22586148072330262},{"article_count":61756,"translation_hegemony":0.022125642038719872},{"article_count":13828,"translation_hegemony":0.08333333333333333},{"article_count":76742,"translation_hegemony":0.03322337417530632},{"article_count":3411,"translation_hegemony":0.0041753653444676405},{"article_count":898,"translation_hegemony":0.09090909090909091},{"article_count":10586,"translation_hegemony":0.10703363914373089},{"article_count":86775,"translation_hegemony":0.02010240849611227},{"article_count":29892,"translation_hegemony":0.25},{"article_count":26349,"translation_hegemony":0.20833333333333334},{"article_count":3841,"translation_hegemony":0.30434782608695654},{"article_count":5697,"translation_hegemony":0.42857142857142855},{"article_count":4650,"translation_hegemony":0.1},{"article_count":35200,"translation_hegemony":0.008125},{"article_count":192888,"translation_hegemony":0.12639642515161187},{"article_count":1262642,"translation_hegemony":0.06942261701400751},{"article_count":2615,"translation_hegemony":0.11764705882352941},{"article_count":90338,"translation_hegemony":0.12507896399241947},{"article_count":11400,"translation_hegemony":0.03076923076923077},{"article_count":1407,"translation_hegemony":0.08823529411764706},{"article_count":56825,"translation_hegemony":0.3291139240506329},{"article_count":4559,"translation_hegemony":0.2857142857142857},{"article_count":594263,"translation_hegemony":0.4820273184759166},{"article_count":6912,"translation_hegemony":0.010526315789473684},{"article_count":1930,"translation_hegemony":0.025936599423631124},{"article_count":15419,"translation_hegemony":0.6666666666666666},{"article_count":6227,"translation_hegemony":0.26666666666666666},{"article_count":4280,"translation_hegemony":0.01805869074492099},{"article_count":370465,"translation_hegemony":0.10964310226492793},{"article_count":1643,"translation_hegemony":0.09090909090909091},{"article_count":6443,"translation_hegemony":0.041666666666666664},{"article_count":16657,"translation_hegemony":0.14285714285714285},{"article_count":14822,"translation_hegemony":0.014492753623188406},{"article_count":20252,"translation_hegemony":0.5714285714285714},{"article_count":463330,"translation_hegemony":0.06235270352164837},{"article_count":57654,"translation_hegemony":0.18867924528301888},{"article_count":9558,"translation_hegemony":0.03260869565217391},{"article_count":8339,"translation_hegemony":0.08873720136518772},{"article_count":169371,"translation_hegemony":0.018169300766283526},{"article_count":137283,"translation_hegemony":0.03453062640985598},{"article_count":12284,"translation_hegemony":0.1},{"article_count":25541,"translation_hegemony":0.21305841924398625},{"article_count":11467,"translation_hegemony":0.0297029702970297},{"article_count":174041,"translation_hegemony":0.008040164441372285},{"article_count":10432,"translation_hegemony":0.08333333333333333},{"article_count":2829,"translation_hegemony":0.022222222222222223},{"article_count":562,"translation_hegemony":0.041666666666666664},{"article_count":425286,"translation_hegemony":0.05636402356782849},{"article_count":253773,"translation_hegemony":0.2980298247523675},{"article_count":42314,"translation_hegemony":0.0022598870056497176},{"article_count":7351,"translation_hegemony":0.05925925925925926},{"article_count":1301,"translation_hegemony":0.125},{"article_count":2684059,"translation_hegemony":0.32603137375523855},{"article_count":24141,"translation_hegemony":0.024709302325581394},{"article_count":239217,"translation_hegemony":0.28506894912030434},{"article_count":12795,"translation_hegemony":0.11764705882352941},{"article_count":1657619,"translation_hegemony":1.2189105858170606},{"article_count":65096,"translation_hegemony":0.6557377049180327},{"article_count":1724,"translation_hegemony":0.030303030303030304},{"article_count":11623,"translation_hegemony":0.009270704573547589},{"article_count":34379,"translation_hegemony":0.04381846635367762},{"article_count":17560,"translation_hegemony":0.028225806451612902},{"article_count":12309,"translation_hegemony":0.22033898305084745},{"article_count":5478,"translation_hegemony":1.0},{"article_count":124116,"translation_hegemony":0.04333781965006729},{"article_count":15951,"translation_hegemony":0.46153846153846156},{"article_count":3015445,"translation_hegemony":3.3344166395840102},{"article_count":8475,"translation_hegemony":0.144},{"article_count":8765,"translation_hegemony":0.11363636363636363},{"article_count":58169,"translation_hegemony":0.06367041198501873},{"article_count":33787,"translation_hegemony":0.024694009018681556},{"article_count":7683,"translation_hegemony":0.055205047318611984},{"article_count":10006,"translation_hegemony":0.05592105263157895},{"article_count":48774,"translation_hegemony":2.222857142857143},{"article_count":1649,"translation_hegemony":0.625},{"article_count":1517,"translation_hegemony":0.5},{"article_count":180786,"translation_hegemony":0.04395604395604396},{"article_count":3142,"translation_hegemony":0.05},{"article_count":557,"translation_hegemony":0.16666666666666666},{"article_count":7901,"translation_hegemony":0.26666666666666666},{"article_count":98811,"translation_hegemony":0.015282131661442006},{"article_count":253757,"translation_hegemony":1.2647420147420148},{"article_count":7005,"translation_hegemony":0.06451612903225806},{"article_count":11337,"translation_hegemony":0.5},{"article_count":2405,"translation_hegemony":0.16666666666666666},{"article_count":182851,"translation_hegemony":0.20496894409937888},{"article_count":375304,"translation_hegemony":0.06860240690281562},{"article_count":282079,"translation_hegemony":0.06055261610817166},{"article_count":69431,"translation_hegemony":0.1},{"article_count":224904,"translation_hegemony":0.11926698390199453},{"article_count":165344,"translation_hegemony":0.24367239732569246},{"article_count":30562,"translation_hegemony":0.06303501945525292},{"article_count":2240,"translation_hegemony":0.01466275659824047},{"article_count":15996,"translation_hegemony":1.1985294117647058},{"article_count":22909,"translation_hegemony":0.020664206642066422},{"article_count":1561,"translation_hegemony":0.3157894736842105},{"article_count":1918540,"translation_hegemony":0.3918140804938858},{"article_count":703820,"translation_hegemony":0.18312818973281297},{"article_count":31147,"translation_hegemony":0.012345679012345678},{"article_count":4724,"translation_hegemony":0.0039177277179236044},{"article_count":1026,"translation_hegemony":0.027777777777777776},{"article_count":7872,"translation_hegemony":0.023148148148148147},{"article_count":58676,"translation_hegemony":0.012002400480096018},{"article_count":45582,"translation_hegemony":0.10659186535764376},{"article_count":15099,"translation_hegemony":0.2},{"article_count":76659,"translation_hegemony":0.34210526315789475},{"article_count":85444,"translation_hegemony":0.7837837837837838},{"article_count":20504,"translation_hegemony":0.061224489795918366},{"article_count":99942,"translation_hegemony":0.06710362047440699},{"article_count":74487,"translation_hegemony":0.0035555555555555557},{"article_count":647510,"translation_hegemony":0.5356459983611035},{"article_count":99588,"translation_hegemony":0.030376670716889428},{"article_count":225826,"translation_hegemony":0.4338810641627543},{"article_count":10036,"translation_hegemony":1.8333333333333333},{"article_count":3628,"translation_hegemony":0.3},{"article_count":4555,"translation_hegemony":0.42857142857142855},{"article_count":513140,"translation_hegemony":0.09256082840988501},{"article_count":228361,"translation_hegemony":0.05596107055961071},{"article_count":14166,"translation_hegemony":0.5263157894736842},{"article_count":94969,"translation_hegemony":0.2943298969072165},{"article_count":13150,"translation_hegemony":0.1388888888888889},{"article_count":4747,"translation_hegemony":0.208955223880597},{"article_count":221293,"translation_hegemony":0.11521955871515888},{"article_count":729221,"translation_hegemony":0.34018554361609826},{"article_count":19552,"translation_hegemony":0.011311053984575836},{"article_count":7094,"translation_hegemony":0.020156774916013438},{"article_count":4462,"translation_hegemony":0.1111111111111111},{"article_count":1174,"translation_hegemony":0.39285714285714285},{"article_count":2033850,"translation_hegemony":0.595156754008231},{"article_count":321,"translation_hegemony":1.0},{"article_count":2023,"translation_hegemony":0.6},{"article_count":48146,"translation_hegemony":0.10344827586206896},{"article_count":568755,"translation_hegemony":0.14812552492937314},{"article_count":5908,"translation_hegemony":0.14285714285714285},{"article_count":2045052,"translation_hegemony":2.9358432477562095},{"article_count":62008,"translation_hegemony":0.02071563088512241},{"article_count":1954,"translation_hegemony":0.06074766355140187},{"article_count":11242,"translation_hegemony":0.0023752969121140144},{"article_count":557293,"translation_hegemony":0.6040158767219239},{"article_count":6858,"translation_hegemony":0.4},{"article_count":3784,"translation_hegemony":0.18181818181818182},{"article_count":58983,"translation_hegemony":0.24},{"article_count":29934,"translation_hegemony":0.1016949152542373},{"article_count":1294341,"translation_hegemony":0.014398279230043238},{"article_count":1225,"translation_hegemony":0.5},{"article_count":244069,"translation_hegemony":0.03508771929824561},{"article_count":14922,"translation_hegemony":0.17647058823529413},{"article_count":24147,"translation_hegemony":0.002881844380403458},{"article_count":204368,"translation_hegemony":0.3057529223011689},{"article_count":6672,"translation_hegemony":0.5},{"article_count":10116,"translation_hegemony":0.3333333333333333},{"article_count":433683,"translation_hegemony":0.006097560975609756},{"article_count":7001,"translation_hegemony":1.0},{"article_count":17268,"translation_hegemony":0.005997001499250375},{"article_count":102514,"translation_hegemony":0.03426753151389059},{"article_count":426,"translation_hegemony":0.08677685950413223},{"article_count":6918,"translation_hegemony":0.012135922330097087},{"article_count":1038978,"translation_hegemony":0.08593893597467579},{"article_count":48537,"translation_hegemony":0.045304530453045305},{"article_count":135159,"translation_hegemony":0.3801526717557252},{"article_count":491,"translation_hegemony":0.18181818181818182},{"article_count":25088,"translation_hegemony":0.2},{"article_count":18493,"translation_hegemony":0.053314121037463975},{"article_count":1052,"translation_hegemony":0.010050251256281407},{"article_count":5949,"translation_hegemony":0.375},{"article_count":8045,"translation_hegemony":0.008502772643253234},{"article_count":29894,"translation_hegemony":0.10437051532941943},{"article_count":2805,"translation_hegemony":0.18181818181818182},{"article_count":14212,"translation_hegemony":0.14705882352941177},{"article_count":774310,"translation_hegemony":0.1885428681276432},{"article_count":174701,"translation_hegemony":0.4298418972332016},{"article_count":7377,"translation_hegemony":0.75},{"article_count":13989,"translation_hegemony":0.9375},{"article_count":5703,"translation_hegemony":0.06},{"article_count":11597,"translation_hegemony":0.17073170731707318},{"article_count":3593,"translation_hegemony":0.058823529411764705},{"article_count":601525,"translation_hegemony":0.17073170731707318},{"article_count":3020,"translation_hegemony":0.15384615384615385},{"article_count":2861,"translation_hegemony":0.010526315789473684},{"article_count":308442,"translation_hegemony":0.3407423392317652},{"article_count":2460,"translation_hegemony":0.07692307692307693},{"article_count":88449,"translation_hegemony":0.05102040816326531},{"article_count":4200,"translation_hegemony":0.005405405405405406},{"article_count":252698,"translation_hegemony":0.04696132596685083},{"article_count":13,"translation_hegemony":0.06666666666666667},{"article_count":144695,"translation_hegemony":0.28467683369644153},{"article_count":10442,"translation_hegemony":0.045871559633027525},{"article_count":21800,"translation_hegemony":0.16981132075471697},{"article_count":90863,"translation_hegemony":0.034636871508379886},{"article_count":1273212,"translation_hegemony":0.35172413793103446},{"article_count":5805,"translation_hegemony":0.1935483870967742},{"article_count":109077,"translation_hegemony":0.03388998035363458},{"article_count":943,"translation_hegemony":0.048672566371681415},{"article_count":502675,"translation_hegemony":0.08274681377211338},{"article_count":19103,"translation_hegemony":0.03896103896103896},{"article_count":319086,"translation_hegemony":0.11108821104699093},{"article_count":759,"translation_hegemony":0.23076923076923078},{"article_count":140199,"translation_hegemony":0.09505208333333333},{"article_count":13600,"translation_hegemony":0.10384615384615385},{"article_count":1871,"translation_hegemony":0.4},{"article_count":88932,"translation_hegemony":0.10699588477366255},{"article_count":2559,"translation_hegemony":0.5},{"article_count":706868,"translation_hegemony":0.3962976064143379},{"article_count":152452,"translation_hegemony":0.025994801039792043},{"article_count":1540,"translation_hegemony":0.007462686567164179},{"article_count":2187144,"translation_hegemony":0.4415245737211635},{"article_count":1865,"translation_hegemony":0.11764705882352941},{"article_count":2142,"translation_hegemony":0.08522727272727272},{"article_count":1627205,"translation_hegemony":0.03691639522258415},{"article_count":292634,"translation_hegemony":0.007578427916813535},{"article_count":13317,"translation_hegemony":0.030303030303030304},{"article_count":63810,"translation_hegemony":0.12863396565271074},{"article_count":1264,"translation_hegemony":0.14285714285714285},{"article_count":15518,"translation_hegemony":0.04946996466431095},{"article_count":57603,"translation_hegemony":0.005307235368585062},{"article_count":1377217,"translation_hegemony":0.14004244825851725},{"article_count":6117065,"translation_hegemony":0.7520938023450586},{"article_count":3916,"translation_hegemony":0.28169014084507044},{"article_count":222287,"translation_hegemony":1.006282722513089},{"article_count":337,"translation_hegemony":0.043478260869565216},{"article_count":2501,"translation_hegemony":0.16666666666666666},{"article_count":6759,"translation_hegemony":1.3333333333333333},{"article_count":42647,"translation_hegemony":0.003266809218341649},{"article_count":339,"translation_hegemony":0.2857142857142857},{"article_count":74084,"translation_hegemony":0.4866666666666667},{"article_count":1390,"translation_hegemony":0.041666666666666664},{"article_count":3541,"translation_hegemony":0.004273504273504274},{"article_count":303862,"translation_hegemony":0.32072829131652664},{"article_count":1761,"translation_hegemony":1.0},{"article_count":41974,"translation_hegemony":0.2857142857142857},{"article_count":20407,"translation_hegemony":0.017391304347826087},{"article_count":7993,"translation_hegemony":0.05454545454545454},{"article_count":1387,"translation_hegemony":0.03225806451612903},{"article_count":75953,"translation_hegemony":0.08719346049046321},{"article_count":3429,"translation_hegemony":0.14814814814814814},{"article_count":635666,"translation_hegemony":0.12103795507358636},{"article_count":11418,"translation_hegemony":0.02329450915141431},{"article_count":29439,"translation_hegemony":0.23809523809523808},{"article_count":4793,"translation_hegemony":0.1},{"article_count":115296,"translation_hegemony":0.15704387990762125},{"article_count":1462048,"translation_hegemony":0.2530255145301781},{"article_count":388,"translation_hegemony":0.07692307692307693},{"article_count":6937,"translation_hegemony":0.21428571428571427},{"article_count":1068,"translation_hegemony":0.03333333333333333},{"article_count":71005,"translation_hegemony":0.05222734254992319},{"article_count":3614,"translation_hegemony":0.012987012987012988},{"article_count":460706,"translation_hegemony":0.864406779661017},{"article_count":6799,"translation_hegemony":0.009478672985781991},{"article_count":1915,"translation_hegemony":0.2},{"article_count":252345,"translation_hegemony":0.537379718726869},{"article_count":1146763,"translation_hegemony":0.30743682042527926},{"article_count":13061,"translation_hegemony":0.07692307692307693},{"article_count":8110,"translation_hegemony":0.35714285714285715},{"article_count":10349,"translation_hegemony":0.00375234521575985},{"article_count":246,"translation_hegemony":0.09090909090909091},{"article_count":2899,"translation_hegemony":0.08152173913043478},{"article_count":2042,"translation_hegemony":0.03571428571428571},{"article_count":56346,"translation_hegemony":0.03333333333333333},{"article_count":19557,"translation_hegemony":0.017779390420899856}]},"encoding":{"x":{"field":"article_count","scale":{"type":"log"},"type":"quantitative"},"y":{"field":"translation_hegemony","scale":{"type":"log"},"type":"quantitative"}},"height":300,"mark":"point","title":"Wiki article count vs. translation hegemony (log-log)","width":400}
+```
+
+```elixir
+Vl.new(width: 400, height: 300, title: "Wiki active editor count vs. translation hege-
+mony (log-log)")
+|> Vl.data_from_values(zero_safe, only: [:active_editor_count, :translation_hegemony])
+|> Vl.mark(:point)
+|> Vl.encode_field(:x, "active_editor_count", type: :quantitative, scale: [type: :log])
+|> Vl.encode_field(:y, "translation_hegemony", type: :quantitative, scale: [type: :log])
+```
+
+<!-- livebook:{"output":true} -->
+
+```vega-lite
+{"$schema":"https://vega.github.io/schema/vega-lite/v5.json","data":{"values":[{"active_editor_count":118797,"translation_hegemony":38.41198778046982},{"active_editor_count":20,"translation_hegemony":0.1},{"active_editor_count":55,"translation_hegemony":0.015209125475285171},{"active_editor_count":146,"translation_hegemony":0.29009433962264153},{"active_editor_count":21,"translation_hegemony":0.011111111111111112},{"active_editor_count":30,"translation_hegemony":0.28},{"active_editor_count":1942,"translation_hegemony":0.9859580903002808},{"active_editor_count":162,"translation_hegemony":0.01855187319884726},{"active_editor_count":6913,"translation_hegemony":0.2048820226353612},{"active_editor_count":35,"translation_hegemony":0.014234875444839857},{"active_editor_count":32,"translation_hegemony":0.9333333333333333},{"active_editor_count":1144,"translation_hegemony":0.22586148072330262},{"active_editor_count":91,"translation_hegemony":0.022125642038719872},{"active_editor_count":14,"translation_hegemony":0.08333333333333333},{"active_editor_count":135,"translation_hegemony":0.03322337417530632},{"active_editor_count":26,"translation_hegemony":0.0041753653444676405},{"active_editor_count":23,"translation_hegemony":0.09090909090909091},{"active_editor_count":52,"translation_hegemony":0.10703363914373089},{"active_editor_count":212,"translation_hegemony":0.02010240849611227},{"active_editor_count":21,"translation_hegemony":0.25},{"active_editor_count":36,"translation_hegemony":0.20833333333333334},{"active_editor_count":30,"translation_hegemony":0.30434782608695654},{"active_editor_count":19,"translation_hegemony":0.42857142857142855},{"active_editor_count":27,"translation_hegemony":0.1},{"active_editor_count":76,"translation_hegemony":0.008125},{"active_editor_count":317,"translation_hegemony":0.12639642515161187},{"active_editor_count":3841,"translation_hegemony":0.06942261701400751},{"active_editor_count":17,"translation_hegemony":0.11764705882352941},{"active_editor_count":80,"translation_hegemony":0.12507896399241947},{"active_editor_count":30,"translation_hegemony":0.03076923076923077},{"active_editor_count":24,"translation_hegemony":0.08823529411764706},{"active_editor_count":74,"translation_hegemony":0.3291139240506329},{"active_editor_count":19,"translation_hegemony":0.2857142857142857},{"active_editor_count":1568,"translation_hegemony":0.4820273184759166},{"active_editor_count":28,"translation_hegemony":0.010526315789473684},{"active_editor_count":21,"translation_hegemony":0.025936599423631124},{"active_editor_count":52,"translation_hegemony":0.6666666666666666},{"active_editor_count":22,"translation_hegemony":0.26666666666666666},{"active_editor_count":18,"translation_hegemony":0.01805869074492099},{"active_editor_count":310,"translation_hegemony":0.10964310226492793},{"active_editor_count":32,"translation_hegemony":0.09090909090909091},{"active_editor_count":30,"translation_hegemony":0.041666666666666664},{"active_editor_count":25,"translation_hegemony":0.14285714285714285},{"active_editor_count":32,"translation_hegemony":0.014492753623188406},{"active_editor_count":26,"translation_hegemony":0.5714285714285714},{"active_editor_count":562,"translation_hegemony":0.06235270352164837},{"active_editor_count":52,"translation_hegemony":0.18867924528301888},{"active_editor_count":21,"translation_hegemony":0.03260869565217391},{"active_editor_count":74,"translation_hegemony":0.08873720136518772},{"active_editor_count":1114,"translation_hegemony":0.018169300766283526},{"active_editor_count":111,"translation_hegemony":0.03453062640985598},{"active_editor_count":47,"translation_hegemony":0.1},{"active_editor_count":138,"translation_hegemony":0.21305841924398625},{"active_editor_count":18,"translation_hegemony":0.0297029702970297},{"active_editor_count":263,"translation_hegemony":0.008040164441372285},{"active_editor_count":15,"translation_hegemony":0.08333333333333333},{"active_editor_count":28,"translation_hegemony":0.022222222222222223},{"active_editor_count":14,"translation_hegemony":0.041666666666666664},{"active_editor_count":586,"translation_hegemony":0.05636402356782849},{"active_editor_count":285,"translation_hegemony":0.2980298247523675},{"active_editor_count":39,"translation_hegemony":0.0022598870056497176},{"active_editor_count":57,"translation_hegemony":0.05925925925925926},{"active_editor_count":22,"translation_hegemony":0.125},{"active_editor_count":17583,"translation_hegemony":0.32603137375523855},{"active_editor_count":47,"translation_hegemony":0.024709302325581394},{"active_editor_count":276,"translation_hegemony":0.28506894912030434},{"active_editor_count":44,"translation_hegemony":0.11764705882352941},{"active_editor_count":4154,"translation_hegemony":1.2189105858170606},{"active_editor_count":80,"translation_hegemony":0.6557377049180327},{"active_editor_count":17,"translation_hegemony":0.030303030303030304},{"active_editor_count":49,"translation_hegemony":0.009270704573547589},{"active_editor_count":85,"translation_hegemony":0.04381846635367762},{"active_editor_count":37,"translation_hegemony":0.028225806451612902},{"active_editor_count":43,"translation_hegemony":0.22033898305084745},{"active_editor_count":27,"translation_hegemony":1.0},{"active_editor_count":185,"translation_hegemony":0.04333781965006729},{"active_editor_count":17,"translation_hegemony":0.46153846153846156},{"active_editor_count":16992,"translation_hegemony":3.3344166395840102},{"active_editor_count":37,"translation_hegemony":0.144},{"active_editor_count":36,"translation_hegemony":0.11363636363636363},{"active_editor_count":31,"translation_hegemony":0.06367041198501873},{"active_editor_count":103,"translation_hegemony":0.024694009018681556},{"active_editor_count":41,"translation_hegemony":0.055205047318611984},{"active_editor_count":48,"translation_hegemony":0.05592105263157895},{"active_editor_count":79,"translation_hegemony":2.222857142857143},{"active_editor_count":9,"translation_hegemony":0.625},{"active_editor_count":24,"translation_hegemony":0.5},{"active_editor_count":36,"translation_hegemony":0.04395604395604396},{"active_editor_count":24,"translation_hegemony":0.05},{"active_editor_count":9,"translation_hegemony":0.16666666666666666},{"active_editor_count":19,"translation_hegemony":0.26666666666666666},{"active_editor_count":661,"translation_hegemony":0.015282131661442006},{"active_editor_count":506,"translation_hegemony":1.2647420147420148},{"active_editor_count":35,"translation_hegemony":0.06451612903225806},{"active_editor_count":19,"translation_hegemony":0.5},{"active_editor_count":14,"translation_hegemony":0.16666666666666666},{"active_editor_count":285,"translation_hegemony":0.20496894409937888},{"active_editor_count":3080,"translation_hegemony":0.06860240690281562},{"active_editor_count":106,"translation_hegemony":0.06055261610817166},{"active_editor_count":50,"translation_hegemony":0.1},{"active_editor_count":249,"translation_hegemony":0.11926698390199453},{"active_editor_count":620,"translation_hegemony":0.24367239732569246},{"active_editor_count":67,"translation_hegemony":0.06303501945525292},{"active_editor_count":28,"translation_hegemony":0.01466275659824047},{"active_editor_count":37,"translation_hegemony":1.1985294117647058},{"active_editor_count":91,"translation_hegemony":0.020664206642066422},{"active_editor_count":18,"translation_hegemony":0.3157894736842105},{"active_editor_count":7477,"translation_hegemony":0.3918140804938858},{"active_editor_count":1832,"translation_hegemony":0.18312818973281297},{"active_editor_count":86,"translation_hegemony":0.012345679012345678},{"active_editor_count":34,"translation_hegemony":0.0039177277179236044},{"active_editor_count":26,"translation_hegemony":0.027777777777777776},{"active_editor_count":20,"translation_hegemony":0.023148148148148147},{"active_editor_count":113,"translation_hegemony":0.012002400480096018},{"active_editor_count":66,"translation_hegemony":0.10659186535764376},{"active_editor_count":39,"translation_hegemony":0.2},{"active_editor_count":57,"translation_hegemony":0.34210526315789475},{"active_editor_count":51,"translation_hegemony":0.7837837837837838},{"active_editor_count":54,"translation_hegemony":0.061224489795918366},{"active_editor_count":129,"translation_hegemony":0.06710362047440699},{"active_editor_count":108,"translation_hegemony":0.0035555555555555557},{"active_editor_count":2997,"translation_hegemony":0.5356459983611035},{"active_editor_count":47,"translation_hegemony":0.030376670716889428},{"active_editor_count":481,"translation_hegemony":0.4338810641627543},{"active_editor_count":40,"translation_hegemony":1.8333333333333333},{"active_editor_count":28,"translation_hegemony":0.3},{"active_editor_count":37,"translation_hegemony":0.42857142857142855},{"active_editor_count":2716,"translation_hegemony":0.09256082840988501},{"active_editor_count":53,"translation_hegemony":0.05596107055961071},{"active_editor_count":46,"translation_hegemony":0.5263157894736842},{"active_editor_count":162,"translation_hegemony":0.2943298969072165},{"active_editor_count":33,"translation_hegemony":0.1388888888888889},{"active_editor_count":16,"translation_hegemony":0.208955223880597},{"active_editor_count":278,"translation_hegemony":0.11521955871515888},{"active_editor_count":2981,"translation_hegemony":0.34018554361609826},{"active_editor_count":127,"translation_hegemony":0.011311053984575836},{"active_editor_count":22,"translation_hegemony":0.020156774916013438},{"active_editor_count":21,"translation_hegemony":0.1111111111111111},{"active_editor_count":18,"translation_hegemony":0.39285714285714285},{"active_editor_count":13466,"translation_hegemony":0.595156754008231},{"active_editor_count":10,"translation_hegemony":1.0},{"active_editor_count":11,"translation_hegemony":0.6},{"active_editor_count":18,"translation_hegemony":0.10344827586206896},{"active_editor_count":2155,"translation_hegemony":0.14812552492937314},{"active_editor_count":26,"translation_hegemony":0.14285714285714285},{"active_editor_count":8756,"translation_hegemony":2.9358432477562095},{"active_editor_count":51,"translation_hegemony":0.02071563088512241},{"active_editor_count":14,"translation_hegemony":0.06074766355140187},{"active_editor_count":39,"translation_hegemony":0.0023752969121140144},{"active_editor_count":1414,"translation_hegemony":0.6040158767219239},{"active_editor_count":27,"translation_hegemony":0.4},{"active_editor_count":24,"translation_hegemony":0.18181818181818182},{"active_editor_count":45,"translation_hegemony":0.24},{"active_editor_count":48,"translation_hegemony":0.1016949152542373},{"active_editor_count":1228,"translation_hegemony":0.014398279230043238},{"active_editor_count":9,"translation_hegemony":0.5},{"active_editor_count":105,"translation_hegemony":0.03508771929824561},{"active_editor_count":33,"translation_hegemony":0.17647058823529413},{"active_editor_count":20,"translation_hegemony":0.002881844380403458},{"active_editor_count":575,"translation_hegemony":0.3057529223011689},{"active_editor_count":21,"translation_hegemony":0.5},{"active_editor_count":34,"translation_hegemony":0.3333333333333333},{"active_editor_count":85,"translation_hegemony":0.006097560975609756},{"active_editor_count":19,"translation_hegemony":1.0},{"active_editor_count":22,"translation_hegemony":0.005997001499250375},{"active_editor_count":256,"translation_hegemony":0.03426753151389059},{"active_editor_count":23,"translation_hegemony":0.08677685950413223},{"active_editor_count":30,"translation_hegemony":0.012135922330097087},{"active_editor_count":4790,"translation_hegemony":0.08593893597467579},{"active_editor_count":160,"translation_hegemony":0.045304530453045305},{"active_editor_count":283,"translation_hegemony":0.3801526717557252},{"active_editor_count":11,"translation_hegemony":0.18181818181818182},{"active_editor_count":17,"translation_hegemony":0.2},{"active_editor_count":139,"translation_hegemony":0.053314121037463975},{"active_editor_count":28,"translation_hegemony":0.010050251256281407},{"active_editor_count":29,"translation_hegemony":0.375},{"active_editor_count":51,"translation_hegemony":0.008502772643253234},{"active_editor_count":93,"translation_hegemony":0.10437051532941943},{"active_editor_count":17,"translation_hegemony":0.18181818181818182},{"active_editor_count":40,"translation_hegemony":0.14705882352941177},{"active_editor_count":1160,"translation_hegemony":0.1885428681276432},{"active_editor_count":146,"translation_hegemony":0.4298418972332016},{"active_editor_count":19,"translation_hegemony":0.75},{"active_editor_count":30,"translation_hegemony":0.9375},{"active_editor_count":22,"translation_hegemony":0.06},{"active_editor_count":67,"translation_hegemony":0.17073170731707318},{"active_editor_count":23,"translation_hegemony":0.058823529411764705},{"active_editor_count":47,"translation_hegemony":0.17073170731707318},{"active_editor_count":24,"translation_hegemony":0.15384615384615385},{"active_editor_count":17,"translation_hegemony":0.010526315789473684},{"active_editor_count":1783,"translation_hegemony":0.3407423392317652},{"active_editor_count":15,"translation_hegemony":0.07692307692307693},{"active_editor_count":91,"translation_hegemony":0.05102040816326531},{"active_editor_count":21,"translation_hegemony":0.005405405405405406},{"active_editor_count":910,"translation_hegemony":0.04696132596685083},{"active_editor_count":18,"translation_hegemony":0.06666666666666667},{"active_editor_count":925,"translation_hegemony":0.28467683369644153},{"active_editor_count":20,"translation_hegemony":0.045871559633027525},{"active_editor_count":38,"translation_hegemony":0.16981132075471697},{"active_editor_count":111,"translation_hegemony":0.034636871508379886},{"active_editor_count":73,"translation_hegemony":0.35172413793103446},{"active_editor_count":25,"translation_hegemony":0.1935483870967742},{"active_editor_count":143,"translation_hegemony":0.03388998035363458},{"active_editor_count":39,"translation_hegemony":0.048672566371681415},{"active_editor_count":97,"translation_hegemony":0.08274681377211338},{"active_editor_count":39,"translation_hegemony":0.03896103896103896},{"active_editor_count":531,"translation_hegemony":0.11108821104699093},{"active_editor_count":16,"translation_hegemony":0.23076923076923078},{"active_editor_count":178,"translation_hegemony":0.09505208333333333},{"active_editor_count":44,"translation_hegemony":0.10384615384615385},{"active_editor_count":11,"translation_hegemony":0.4},{"active_editor_count":108,"translation_hegemony":0.10699588477366255},{"active_editor_count":9,"translation_hegemony":0.5},{"active_editor_count":2343,"translation_hegemony":0.3962976064143379},{"active_editor_count":221,"translation_hegemony":0.025994801039792043},{"active_editor_count":19,"translation_hegemony":0.007462686567164179},{"active_editor_count":3632,"translation_hegemony":0.4415245737211635},{"active_editor_count":14,"translation_hegemony":0.11764705882352941},{"active_editor_count":26,"translation_hegemony":0.08522727272727272},{"active_editor_count":196,"translation_hegemony":0.03691639522258415},{"active_editor_count":448,"translation_hegemony":0.007578427916813535},{"active_editor_count":29,"translation_hegemony":0.030303030303030304},{"active_editor_count":73,"translation_hegemony":0.12863396565271074},{"active_editor_count":11,"translation_hegemony":0.14285714285714285},{"active_editor_count":43,"translation_hegemony":0.04946996466431095},{"active_editor_count":140,"translation_hegemony":0.005307235368585062},{"active_editor_count":3060,"translation_hegemony":0.14004244825851725},{"active_editor_count":194,"translation_hegemony":0.7520938023450586},{"active_editor_count":22,"translation_hegemony":0.28169014084507044},{"active_editor_count":331,"translation_hegemony":1.006282722513089},{"active_editor_count":9,"translation_hegemony":0.043478260869565216},{"active_editor_count":17,"translation_hegemony":0.16666666666666666},{"active_editor_count":18,"translation_hegemony":1.3333333333333333},{"active_editor_count":120,"translation_hegemony":0.003266809218341649},{"active_editor_count":9,"translation_hegemony":0.2857142857142857},{"active_editor_count":63,"translation_hegemony":0.4866666666666667},{"active_editor_count":27,"translation_hegemony":0.041666666666666664},{"active_editor_count":23,"translation_hegemony":0.004273504273504274},{"active_editor_count":653,"translation_hegemony":0.32072829131652664},{"active_editor_count":41,"translation_hegemony":1.0},{"active_editor_count":30,"translation_hegemony":0.2857142857142857},{"active_editor_count":24,"translation_hegemony":0.017391304347826087},{"active_editor_count":24,"translation_hegemony":0.05454545454545454},{"active_editor_count":14,"translation_hegemony":0.03225806451612903},{"active_editor_count":99,"translation_hegemony":0.08719346049046321},{"active_editor_count":27,"translation_hegemony":0.14814814814814814},{"active_editor_count":2583,"translation_hegemony":0.12103795507358636},{"active_editor_count":63,"translation_hegemony":0.02329450915141431},{"active_editor_count":66,"translation_hegemony":0.23809523809523808},{"active_editor_count":51,"translation_hegemony":0.1},{"active_editor_count":85,"translation_hegemony":0.15704387990762125},{"active_editor_count":12764,"translation_hegemony":0.2530255145301781},{"active_editor_count":24,"translation_hegemony":0.07692307692307693},{"active_editor_count":35,"translation_hegemony":0.21428571428571427},{"active_editor_count":16,"translation_hegemony":0.03333333333333333},{"active_editor_count":51,"translation_hegemony":0.05222734254992319},{"active_editor_count":15,"translation_hegemony":0.012987012987012988},{"active_editor_count":531,"translation_hegemony":0.864406779661017},{"active_editor_count":36,"translation_hegemony":0.009478672985781991},{"active_editor_count":18,"translation_hegemony":0.2},{"active_editor_count":682,"translation_hegemony":0.537379718726869},{"active_editor_count":8511,"translation_hegemony":0.30743682042527926},{"active_editor_count":39,"translation_hegemony":0.07692307692307693},{"active_editor_count":27,"translation_hegemony":0.35714285714285715},{"active_editor_count":29,"translation_hegemony":0.00375234521575985},{"active_editor_count":25,"translation_hegemony":0.09090909090909091},{"active_editor_count":21,"translation_hegemony":0.08152173913043478},{"active_editor_count":33,"translation_hegemony":0.03571428571428571},{"active_editor_count":62,"translation_hegemony":0.03333333333333333},{"active_editor_count":50,"translation_hegemony":0.017779390420899856}]},"encoding":{"x":{"field":"active_editor_count","scale":{"type":"log"},"type":"quantitative"},"y":{"field":"translation_hegemony","scale":{"type":"log"},"type":"quantitative"}},"height":300,"mark":"point","title":"Wiki active editor count vs. translation hege-\nmony (log-log)","width":400}
 ```
